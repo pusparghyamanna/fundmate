@@ -1,0 +1,1565 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>FundMate</title>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700;600;500;400;300&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+  <style>
+    :root {
+      --primary: #2d6cdf;
+      --secondary: #20c997;
+      --danger: #e74c3c;
+      --text: #23272f;
+      --text-light: #6c757d;
+      --bg: #f5f7fa;
+      --card: #fff;
+      --border: #e3e6ea;
+      --accent: #f1f6fb;
+      --footer-bg: #f8fafc;
+
+      --button-bg: #2d6cdf;
+      --button-hover: #205db7;
+      --button-active: #174c98;
+      --button-text: #fff;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html, body {
+      height: 100%;
+      font-family: 'Montserrat', 'Poppins', sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      -webkit-text-size-adjust: 100%;
+      width: 100%;
+      overflow-x: hidden;
+    }
+
+    .app-container {
+      max-width: 1120px;
+      margin: 0 auto;
+      padding: 0 12px;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      width: 100vw;
+      box-sizing: border-box;
+      overflow-x: hidden;
+    }
+
+    /* Logout Button */
+    .logout-btn {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: var(--danger);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      padding: 8px 16px;
+      font-weight: 600;
+      cursor: pointer;
+      z-index: 1000;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+      transition: all 0.2s;
+    }
+    
+    .logout-btn:hover {
+      background: #c0392b;
+      transform: translateY(-1px);
+    }
+
+    /* Slidebar Styles */
+    .slidebar {
+      position: fixed;
+      top: 0;
+      left: -300px;
+      width: 280px;
+      height: 100vh;
+      background: var(--card);
+      box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+      transition: transform 0.3s ease;
+      z-index: 1001;
+      padding: 20px;
+      overflow-y: auto;
+    }
+    
+    .slidebar.open {
+      transform: translateX(300px);
+    }
+    
+    .slidebar-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid var(--border);
+    }
+    
+    .slidebar-title {
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: var(--primary);
+    }
+    
+    .close-slidebar {
+      background: none;
+      border: none;
+      font-size: 1.5rem;
+      cursor: pointer;
+      color: var(--text-light);
+      transition: transform 0.2s;
+    }
+    
+    .close-slidebar:hover {
+      transform: scale(1.1);
+    }
+    
+    .sheet-list {
+      list-style: none;
+      margin-top: 10px;
+    }
+    
+    .sheet-item {
+      padding: 12px 15px;
+      margin-bottom: 8px;
+      border-radius: 8px;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      transition: all 0.2s;
+      background: var(--bg);
+      border: 1px solid var(--border);
+    }
+    
+    .sheet-item:hover {
+      background: var(--accent);
+      transform: translateX(3px);
+    }
+    
+    .sheet-item.active {
+      background: var(--primary);
+      color: white;
+      border-color: var(--primary);
+    }
+    
+    .sheet-item-name {
+      flex: 1;
+      font-weight: 500;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    
+    .sheet-actions {
+      display: flex;
+      gap: 5px;
+      margin-left: 10px;
+    }
+    
+    .sheet-action-btn {
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 4px;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+      color: var(--text-light);
+    }
+    
+    .sheet-item.active .sheet-action-btn {
+      color: rgba(255,255,255,0.8);
+    }
+    
+    .sheet-action-btn:hover {
+      background: rgba(0,0,0,0.1);
+      color: var(--primary);
+    }
+    
+    .sheet-item.active .sheet-action-btn:hover {
+      background: rgba(255,255,255,0.2);
+      color: white;
+    }
+    
+    .sheet-action-btn.delete:hover {
+      color: var(--danger);
+    }
+    
+    .new-sheet-btn {
+      width: 100%;
+      padding: 12px;
+      background: var(--secondary);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-weight: 600;
+      margin-bottom: 20px;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      box-shadow: 0 2px 8px rgba(32, 201, 151, 0.3);
+    }
+    
+    .new-sheet-btn:hover {
+      background: #1aa179;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(32, 201, 151, 0.4);
+    }
+    
+    .new-sheet-btn:active {
+      transform: translateY(0);
+    }
+    
+    .new-sheet-btn svg {
+      width: 16px;
+      height: 16px;
+    }
+
+    /* Updated Hamburger Menu */
+    .hamburger-menu {
+      position: fixed;
+      top: 20px;
+      left: 20px;
+      width: 40px;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      z-index: 1000;
+      background: var(--card);
+      padding: 8px;
+      border-radius: 8px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    
+    .hamburger-menu svg {
+      width: 24px;
+      height: 24px;
+      transition: all 0.3s ease;
+    }
+    
+    .hamburger-menu.open svg {
+      transform: rotate(90deg);
+    }
+
+    /* Header */
+    .header {
+      margin: 0;
+      margin-top: 32px;
+      padding-bottom: 18px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      background: none;
+    }
+    
+    .chapter-name {
+      font-size: 1.8rem;
+      font-weight: 700;
+      color: var(--primary);
+      position: relative;
+      padding-bottom: 12px;
+      margin-top: 20px;
+      width: 100%;
+      max-width: 420px;
+      text-align: center;
+      cursor: pointer;
+      background: linear-gradient(90deg, var(--primary), var(--secondary));
+      color: transparent;
+      -webkit-background-clip: text;
+      background-clip: text;
+      text-shadow: 0 4px 24px #dde4fa;
+    }
+
+    /* Main Layout */
+    .main-content {
+      display: grid;
+      grid-template-columns: 320px 1fr;
+      gap: 24px;
+      flex: 1;
+      width: 100%;
+      box-sizing: border-box;
+      margin-top: 12px;
+    }
+
+    /* Card Styles */
+    .card {
+      background: var(--card);
+      border-radius: 14px;
+      box-shadow: 0 4px 16px rgba(45, 108, 223, 0.07);
+      padding: 18px 18px 14px 18px;
+      border: 1px solid var(--border);
+      width: 100%;
+      box-sizing: border-box;
+    }
+
+    /* Summary Card & Pie Chart */
+    .summary-title {
+      font-size: 1.17rem;
+      font-weight: 700;
+      margin-bottom: 14px;
+      color: var(--primary);
+      letter-spacing: 1px;
+    }
+    .summary-compact {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+    }
+    .stats-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px 16px;
+      justify-content: center;
+      margin-bottom: 8px;
+    }
+    .stat-box {
+      background: var(--accent);
+      color: var(--primary);
+      padding: 9px 14px 7px 14px;
+      border-radius: 7px;
+      min-width: 102px;
+      text-align: center;
+      margin-bottom: 6px;
+      box-shadow: 0 1px 4px #b8c0ff20;
+    }
+    .stat-label {
+      font-size: 13px;
+      color: var(--text-light);
+      margin-bottom: 2px;
+      font-weight: 500;
+      letter-spacing: .5px;
+    }
+    .stat-value {
+      font-size: 1.23rem;
+      font-weight: 800;
+      color: var(--text);
+    }
+    /* Mini Pie Chart */
+    .mini-pie-wrapper {
+      margin: 10px 0 4px 0;
+      width: 119px;
+      height: 119px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #e6f0fd;
+      border-radius: 100%;
+      box-shadow: 0 1px 6px #d1e7ff23;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    #donutChart {
+      width: 90px !important;
+      height: 90px !important;
+      max-width: 90px;
+      max-height: 90px;
+      margin: 0 auto;
+      display: block;
+    }
+    .progress-container {
+      margin: 7px 0 0 0;
+      width: 100%;
+    }
+    .progress-bar {
+      height: 9px;
+      background-color: #e3e6ea;
+      border-radius: 6px;
+      overflow: hidden;
+      margin-bottom: 5px;
+      margin-top: 6px;
+    }
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--primary), var(--secondary));
+      border-radius: 6px;
+      transition: width 0.4s ease;
+    }
+    .progress-text {
+      text-align: right;
+      font-size: 13px;
+      color: var(--secondary);
+      font-weight: 600;
+      margin-bottom: 3px;
+    }
+    .filters-title {
+      font-size: 13px;
+      color: var(--text-light);
+      margin-bottom: 8px;
+      margin-top: 7px;
+      letter-spacing: .3px;
+    }
+    .filter-buttons {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 14px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    .filter-btn {
+      padding: 8px 14px;
+      border-radius: 8px;
+      background-color: var(--button-bg);
+      color: var(--button-text);
+      border: none;
+      font-size: 13px;
+      cursor: pointer;
+      transition: background 0.2s;
+      font-weight: 600;
+      min-width: 74px;
+      box-shadow: 0 1px 2px #d8e2f1;
+    }
+    .filter-btn.active,
+    .filter-btn:focus,
+    .filter-btn:hover {
+      background: var(--button-hover);
+      color: #fff;
+    }
+    .text-muted {
+      color: var(--text-light);
+      font-size: 12px;
+      text-align: center;
+      margin-top: 8px;
+      margin-bottom: 0;
+    }
+
+    /* Table Styles */
+    .search-container {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 9px;
+      flex-wrap: wrap;
+    }
+    .search-input {
+      flex: 1;
+      padding: 10px 14px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      font-size: 14px;
+      min-width: 120px;
+    }
+    .sort-select {
+      padding: 10px 14px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      font-size: 14px;
+      background-color: white;
+      min-width: 120px;
+    }
+    .students-table {
+      width: 100%;
+      border-collapse: collapse;
+      box-sizing: border-box;
+      table-layout: auto;
+      word-break: break-word;
+      background: white;
+      border-radius: 9px;
+      overflow: hidden;
+    }
+    .students-table th {
+      text-align: left;
+      padding: 12px 8px 12px 13px;
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--text-light);
+      border-bottom: 2px solid var(--border);
+      word-break: break-word;
+      background: #e6f0fd;
+    }
+    .students-table td {
+      padding: 12px 8px 12px 13px;
+      border-bottom: 1px solid var(--border);
+      vertical-align: middle;
+      word-break: break-word;
+      background: white;
+    }
+    .students-table td:first-child {
+      max-width: 220px;
+      width: 32vw;
+      min-width: 120px;
+      font-size: 15px;
+      font-weight: 600;
+      letter-spacing: .02em;
+      color: var(--primary);
+      padding-right: 12px;
+    }
+    /* Large Checkbox */
+    .paid-toggle {
+      width: 1.5em;
+      height: 1.5em;
+      accent-color: var(--secondary);
+      cursor: pointer;
+      margin-right: 5px;
+      transform: scale(1.2);
+    }
+    .status-indicator {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .status-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      border: 2px solid #dde4fa;
+    }
+    .status-dot.paid {
+      background-color: var(--secondary);
+    }
+    .status-dot.unpaid {
+      background-color: var(--danger);
+    }
+    /* Action Buttons: icon-only, smaller, square */
+    .action-buttons {
+      display: flex;
+      gap: 6px;
+    }
+    .action-btn {
+      background: var(--button-bg);
+      border: none;
+      border-radius: 8px;
+      padding: 0;
+      font-size: 15px;
+      cursor: pointer;
+      transition: background 0.2s, filter 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 34px;
+      width: 34px;
+      min-width: 34px;
+      min-height: 34px;
+      color: var(--button-text);
+      box-shadow: 0 1px 2px #d8e2f1;
+    }
+    .action-btn.edit-btn:hover, .action-btn.edit-btn:focus {
+      background: var(--button-hover);
+      color: #fff;
+    }
+    .action-btn.delete-btn:hover, .action-btn.delete-btn:focus {
+      background: var(--danger);
+      color: #fff;
+    }
+    .action-btn svg {
+      display: block;
+      width: 18px;
+      height: 18px;
+      pointer-events: none;
+    }
+
+    /* Footer Buttons */
+    .footer {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 70px;
+      margin-top: 40px;
+      padding: 24px 0;
+      border-radius: 10px;
+      background: rgba(255,255,255,0.02);
+      width: 100%;
+      max-width: 1000px;
+      margin-left: auto;
+      margin-right: auto;
+      background: none;
+    }
+    .footer-btn {
+      height: 130px;
+      min-width: 180px;
+      min-height: 130px;
+      max-width: 240px;
+      max-height: 160px;
+      padding: 20px 26px;
+      border-radius: 22px;
+      font-weight: 700;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: background 0.2s, filter 0.2s;
+      border: none;
+      font-size: 52px;
+      background: var(--button-bg);
+      color: var(--button-text);
+      box-shadow: 0 2px 16px #d8e2f1;
+      letter-spacing: .03em;
+      gap: 2px;
+    }
+    .footer-btn:hover, .footer-btn:focus {
+      background: var(--button-hover);
+      color: #fff;
+      outline: none;
+      filter: brightness(1.05);
+    }
+    .footer-btn svg, .footer-btn span {
+      pointer-events: none;
+      font-size: 54px;
+      line-height: 1;
+      display: block;
+    }
+    .footer-label {
+      font-size: 1.45rem;
+      font-weight: 500;
+      margin-top: 4px;
+      color: #fff;
+      letter-spacing: .01em;
+      text-align: center;
+    }
+    @media (max-width: 1200px) {
+      .footer {
+        max-width: 100vw;
+        gap: 36px;
+        margin-top: 26px;
+        padding: 12px 0;
+      }
+      .footer-btn {
+        height: 90px;
+        min-width: 120px;
+        min-height: 90px;
+        font-size: 32px;
+        padding: 8px 18px;
+        border-radius: 14px;
+      }
+      .footer-btn svg, .footer-btn span {
+        font-size: 32px;
+      }
+      .footer-label {
+        font-size: 1.1rem;
+        margin-top: 6px;
+      }
+    }
+    @media (max-width: 900px) {
+      .footer {
+        max-width: 100vw;
+        gap: 16px;
+        margin-top: 20px;
+        padding: 8px 0;
+      }
+      .footer-btn {
+        height: 64px;
+        min-width: 88px;
+        min-height: 64px;
+        font-size: 22px;
+        padding: 4px 8px;
+        border-radius: 10px;
+      }
+      .footer-btn svg, .footer-btn span {
+        font-size: 22px;
+      }
+      .footer-label {
+        font-size: 0.9rem;
+        margin-top: 2px;
+      }
+    }
+    @media (max-width: 600px) {
+      .footer {
+        gap: 7px;
+        padding: 6px 0;
+        margin-top: 12px;
+      }
+      .footer-btn {
+        height: 48px;
+        min-width: 56px;
+        min-height: 48px;
+        font-size: 17px;
+        padding: 2px 4px;
+        border-radius: 8px;
+      }
+      .footer-btn svg, .footer-btn span {
+        font-size: 17px;
+      }
+      .footer-label {
+        font-size: 0.75rem;
+        margin-top: 1px;
+      }
+    }
+    @media (max-width: 500px) {
+      .students-table th, .students-table td {
+        padding: 7px 4px;
+        font-size: 12px;
+      }
+      .chapter-name {
+        font-size: 1.4rem;
+      }
+      .card {
+        padding: 7px 2px 5px 2px;
+      }
+      .footer {
+        gap: 6px;
+      }
+      .footer-btn {
+        font-size: 15px;
+        height: 38px;
+        min-width: 38px;
+        min-height: 38px;
+        border-radius: 6px;
+      }
+    }
+
+    /* Modal Styles */
+    .modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: rgba(0, 0, 0, 0.45);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1002;
+    }
+    .modal.open {
+      display: flex;
+    }
+    .modal-content {
+      background-color: white;
+      border-radius: 14px;
+      width: 100%;
+      max-width: 410px;
+      padding: 24px 18px 18px 18px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.10);
+      box-sizing: border-box;
+      margin: 20px;
+    }
+    .modal-title {
+      font-size: 1.23rem;
+      font-weight: 700;
+      margin-bottom: 18px;
+      color: var(--primary);
+      text-align: center;
+    }
+    .modal-input {
+      width: 100%;
+      padding: 13px 10px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      font-size: 15px;
+      margin-bottom: 20px;
+      box-sizing: border-box;
+      font-family: inherit;
+    }
+    .modal-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+    }
+    .hidden {
+      display: none;
+    }
+
+    /* Designed Page Footer */
+    .page-footer {
+      margin-top: 40px;
+      padding: 25px 0 14px 0;
+      background: var(--footer-bg);
+      text-align: center;
+      color: var(--primary);
+      font-family: 'Montserrat', sans-serif;
+      font-weight: 600;
+      font-size: 1.12rem;
+      letter-spacing: .04em;
+      box-shadow: 0 -2px 16px #e3e6ea1a;
+      border-top-left-radius: 22px;
+      border-top-right-radius: 22px;
+    }
+
+    /* Mobile Responsive */
+    @media (max-width: 900px) {
+      .app-container {
+        padding: 0 2px 0 2px;
+      }
+      .header {
+        margin-top: 18px;
+      }
+    }
+    @media (max-width: 768px) {
+      .main-content {
+        grid-template-columns: 1fr;
+        gap: 12px;
+        width: 100%;
+      }
+      .app-container {
+        padding: 0 2px 0 2px;
+        width: 100vw;
+        overflow-x: hidden;
+      }
+      .card {
+        padding: 12px 5px 10px 5px;
+        border-radius: 9px;
+        width: 100%;
+        box-sizing: border-box;
+      }
+      .footer {
+        flex-direction: row;
+        gap: 18px;
+        max-width: 100vw;
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Logout Button -->
+  <button class="logout-btn" id="logoutBtn">Logout</button>
+  
+  <!-- Hamburger Menu -->
+  <div class="hamburger-menu" id="hamburgerMenu">
+    <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20M4 12.5A2.5 2.5 0 0 1 6.5 10H20M4 5.5A2.5 2.5 0 0 1 6.5 3H20"/>
+    </svg>
+  </div>
+
+  <!-- Slidebar -->
+  <div class="slidebar" id="slidebar">
+    <div class="slidebar-header">
+      <div class="slidebar-title">Your Sheets</div>
+      <button class="close-slidebar" id="closeSlidebar">×</button>
+    </div>
+    <button class="new-sheet-btn" id="newSheetBtn">
+      <svg viewBox="0 0 20 20" fill="currentColor">
+        <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd"/>
+      </svg>
+      New Sheet
+    </button>
+    <ul class="sheet-list" id="sheetList">
+      <!-- Sheets will be added here dynamically -->
+    </ul>
+  </div>
+
+  <div class="app-container">
+    <header class="header">
+      <div class="chapter-name" id="subjectName">Enter Title</div>
+    </header>
+
+    <main class="main-content">
+      <!-- Summary Section -->
+      <aside class="card">
+        <h3 class="summary-title">Summary</h3>
+        <div class="summary-compact">
+          <div class="mini-pie-wrapper">
+            <canvas id="donutChart" width="90" height="90"></canvas>
+          </div>
+          <div class="progress-text" style="margin-top:3px;">
+            <span id="progressText">0%</span> paid
+          </div>
+          <div class="progress-container">
+            <div class="progress-bar">
+              <div class="progress-fill" id="progressFill" style="width: 0%"></div>
+            </div>
+          </div>
+          <div class="stats-grid">
+            <div class="stat-box">
+              <div class="stat-label">Total Students</div>
+              <div class="stat-value" id="totalStudents">0</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-label">Collected</div>
+              <div class="stat-value" id="collectedCount">0</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-label">Amount / Student</div>
+              <div class="stat-value text-muted">₹<span id="feeAmount">0</span></div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-label">Total Amount</div>
+              <div class="stat-value">₹<span id="collectedAmount">0</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="filters-title">Quick filters</div>
+        <div class="filter-buttons">
+          <button class="filter-btn active" data-filter="all">All</button>
+          <button class="filter-btn" data-filter="paid">Paid</button>
+          <button class="filter-btn" data-filter="unpaid">Unpaid</button>
+        </div>
+        <div class="text-muted">Last saved: <span id="lastSaved">Never</span></div>
+      </aside>
+
+      <!-- Students Table -->
+      <section>
+        <div class="card">
+          <div class="search-container">
+            <input type="text" class="search-input" id="searchInput" placeholder="Search students by name...">
+            <select class="sort-select" id="sortSelect">
+              <option value="name_asc">Name A→Z</option>
+              <option value="name_desc">Name Z→A</option>
+              <option value="paid_desc">Paid first</option>
+              <option value="paid_asc">Unpaid first</option>
+            </select>
+          </div>
+          <div style="overflow-x:auto; width:100%;">
+            <table class="students-table" id="studentsTable">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th style="width: 100px">Paid</th>
+                  <th style="width: 120px">Status</th>
+                  <th style="width: 80px">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="studentsTbody">
+                <!-- Table rows will be rendered by JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <button class="footer-btn" id="importBtn" title="Import">
+        <span><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-download" viewBox="0 0 16 16"><path d="M.5 9.9a.5.5 0 0 1 .5.5v3.5A1.5 1.5 0 0 0 2.5 15h11a1.5 1.5 0 0 0 1.5-1.5V10.4a.5.5 0 0 1 1 0v3.1A2.5 2.5 0 0 1 13.5 16h-11A2.5 2.5 0 0 1 0 13.5V10.4a.5.5 0 0 1 .5-.5z"/><path d="M7.646 10.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 9.293V1.5a.5.5 0 0 0-1 0v7.793L5.354 7.146a.5.5 0 1 0-.708.708l3 3z"/></svg></span>
+        <span class="footer-label">Import</span>
+      </button>
+      <button class="footer-btn" id="exportJsonBtn" title="Export">
+        <span><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-upload" viewBox="0 0 16 16"><path d="M.5 9.9a.5.5 0 0 0 .5.5v3.5A1.5 1.5 0 0 0 2.5 15h11a1.5 1.5 0 0 0 1.5-1.5V10.4a.5.5 0 0 0 1 0v3.1A2.5 2.5 0 0 1 13.5 16h-11A2.5 2.5 0 0 1 0 13.5V10.4a.5.5 0 0 0 .5-.5z"/><path d="M7.646 5.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1-.708.708L8.5 6.207V14.5a.5.5 0 0 1-1 0V6.207L5.354 8.854a.5.5 0 1 1-.708-.708l3-3z"/></svg></span>
+        <span class="footer-label">Export</span>
+      </button>
+ <button class="footer-btn" id="resetBtn" title="Reset">
+  <!-- Reset Icon -->
+  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 24 24">
+    <path d="M17.65 6.35a8 8 0 1 0 2.35 5.65h-2a6 6 0 1 1-1.76-4.24l-2.79 2.79h7V4l-2.8 2.35z"/>
+  </svg>
+  <span class="footer-label">Reset</span>
+</button>
+      <button class="footer-btn" id="addBtn" title="Add Student">
+        <span><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-plus-circle" viewBox="0 0 16 16"><path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"/><path d="M8 4a.5.5 0 0 1 .5.5V7.5H11.5a.5.5 0 0 1 0 1H8.5V11.5a.5.5 0 0 1-1 0V8.5H4.5a.5.5 0 0 1 0-1H7.5V4.5A.5.5 0 0 1 8 4z"/></svg></span>
+        <span class="footer-label">Add Student</span>
+      </button>
+    </footer>
+    <div class="page-footer">
+      © 2025 Pusparghya Manna. All rights reserved.
+    </div>
+
+    <!-- Hidden file input for import -->
+    <input type="file" id="importFile" accept="application/json" class="hidden">
+
+    <!-- Modal -->
+    <div class="modal" id="modal">
+      <div class="modal-content">
+        <h3 class="modal-title" id="modalTitle">Add Student</h3>
+        <input type="text" class="modal-input" id="studentNameInput" placeholder="Student full name">
+        <input type="number" class="modal-input" id="studentFeeInput" placeholder="Fee amount (₹)" min="0">
+        <div class="modal-actions">
+          <button class="footer-btn" id="cancelModal" style="background:var(--footer-bg);color:var(--primary);font-weight:600;">✖</button>
+          <button class="footer-btn" id="saveModal">✔</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- New Sheet Modal -->
+    <div class="modal" id="newSheetModal">
+      <div class="modal-content">
+        <h3 class="modal-title">New Sheet</h3>
+        <input type="text" class="modal-input" id="sheetNameInput" placeholder="Enter sheet name">
+        <div class="modal-actions">
+          <button class="footer-btn" id="cancelNewSheet" style="background:var(--footer-bg);color:var(--primary);font-weight:600;">Cancel</button>
+          <button class="footer-btn" id="saveNewSheet">Create</button>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // Firebase configuration - REPLACE WITH YOUR OWN CONFIG
+      const firebaseConfig = {
+  apiKey: "AIzaSyBBsxNIJOijdGmVUcsRt0zPNQq96YYgWAc",
+  authDomain: "fees-sheet-online.firebaseapp.com",
+  projectId: "fees-sheet-online",
+  storageBucket: "fees-sheet-online.firebasestorage.app",
+  messagingSenderId: "1018149181136",
+  appId: "1:1018149181136:web:9fa630cd808b96d31df0d5",
+  measurementId: "G-F29K3GV8YK"
+};
+
+      // Initialize Firebase
+      firebase.initializeApp(firebaseConfig);
+      const auth = firebase.auth();
+      const db = firebase.firestore();
+
+      // Check authentication state
+      auth.onAuthStateChanged((user) => {
+        if (!user) {
+          // User is not logged in, redirect to login page
+          window.location.href = 'login.html';
+        } else {
+          // User is logged in, initialize the app
+          initApp(user);
+        }
+      });
+
+      // Logout button
+      document.getElementById('logoutBtn').addEventListener('click', () => {
+        auth.signOut().then(() => {
+          window.location.href = 'login.html';
+        });
+      });
+
+      function initApp(user) {
+        // --- Data & defaults ---
+        const DEFAULT_STUDENTS = [];
+
+        let students = [];
+        let editingId = null;
+        let currentSheetId = null;
+        let donutChart = null;
+
+        // Elements
+        const studentsTbody = document.getElementById('studentsTbody');
+        const totalStudentsEl = document.getElementById('totalStudents');
+        const collectedCountEl = document.getElementById('collectedCount');
+        const collectedAmountEl = document.getElementById('collectedAmount');
+        const progressFill = document.getElementById('progressFill');
+        const progressText = document.getElementById('progressText');
+        const donutCtx = document.getElementById('donutChart');
+        const searchInput = document.getElementById('searchInput');
+        const sortSelect = document.getElementById('sortSelect');
+        const hamburgerMenu = document.getElementById('hamburgerMenu');
+        const slidebar = document.getElementById('slidebar');
+        const closeSlidebar = document.getElementById('closeSlidebar');
+        const sheetList = document.getElementById('sheetList');
+        const newSheetBtn = document.getElementById('newSheetBtn');
+        const newSheetModal = document.getElementById('newSheetModal');
+        const sheetNameInput = document.getElementById('sheetNameInput');
+        const saveNewSheet = document.getElementById('saveNewSheet');
+        const cancelNewSheet = document.getElementById('cancelNewSheet');
+        const subjectNameEl = document.getElementById('subjectName');
+
+        // --- Storage helpers ---
+        function saveState(){
+          if (!currentSheetId || !auth.currentUser) return;
+          
+          const sheetData = {
+            id: currentSheetId,
+            name: subjectNameEl.textContent,
+            students: students,
+            lastSaved: new Date().toISOString()
+          };
+          
+          // Save to Firestore
+          db.collection('users').doc(auth.currentUser.uid)
+            .collection('sheets').doc(currentSheetId).set(sheetData)
+            .then(() => {
+              document.getElementById('lastSaved').textContent = new Date().toLocaleString();
+              renderSheetList();
+            })
+            .catch(error => {
+              console.error("Error saving sheet: ", error);
+              alert('Error saving sheet: ' + error.message);
+            });
+        }
+
+        function loadState(){
+          if (!auth.currentUser) return;
+          
+          // Try to get the current sheet ID from localStorage
+          currentSheetId = localStorage.getItem('efs_current_sheet');
+          
+          // Load sheets from Firestore
+          db.collection('users').doc(auth.currentUser.uid)
+            .collection('sheets').get()
+            .then((querySnapshot) => {
+              if (querySnapshot.empty) {
+                // No sheets exist, create a default one
+                createDefaultSheet();
+              } else {
+                // Sheets exist, load them
+                const sheets = {};
+                querySnapshot.forEach((doc) => {
+                  sheets[doc.id] = doc.data();
+                });
+                
+                if (!currentSheetId || !sheets[currentSheetId]) {
+                  // Use the first sheet if currentSheetId is not set or invalid
+                  currentSheetId = querySnapshot.docs[0].id;
+                  localStorage.setItem('efs_current_sheet', currentSheetId);
+                }
+                
+                const currentSheet = sheets[currentSheetId];
+                students = currentSheet.students || [];
+                subjectNameEl.textContent = currentSheet.name || 'FundMate';
+                document.getElementById('lastSaved').textContent = currentSheet.lastSaved ? 
+                  new Date(currentSheet.lastSaved).toLocaleString() : 'Never';
+                
+                renderSheetList();
+                render();
+              }
+            })
+            .catch(error => {
+              console.error("Error loading sheets: ", error);
+              // Fallback to creating a default sheet
+              createDefaultSheet();
+            });
+        }
+
+        function createDefaultSheet() {
+          currentSheetId = 'sheet_' + Date.now();
+          students = JSON.parse(JSON.stringify(DEFAULT_STUDENTS));
+          subjectNameEl.textContent = 'FundMate';
+          document.getElementById('lastSaved').textContent = 'Never';
+          saveState();
+          render();
+        }
+
+        function renderSheetList() {
+          if (!auth.currentUser) return;
+          
+          db.collection('users').doc(auth.currentUser.uid)
+            .collection('sheets').get()
+            .then((querySnapshot) => {
+              sheetList.innerHTML = '';
+              
+              querySnapshot.forEach((doc) => {
+                const sheet = doc.data();
+                if (!sheet) return;
+                
+                const li = document.createElement('li');
+                li.className = `sheet-item ${sheet.id === currentSheetId ? 'active' : ''}`;
+                li.innerHTML = `
+                  <div class="sheet-item-name">${sheet.name}</div>
+                  <div class="sheet-actions">
+                    <button class="sheet-action-btn rename" title="Rename" data-id="${sheet.id}">
+                      <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor">
+                        <path d="M4 13.5V16h2.5l7.06-7.06-2.5-2.5L4 13.5zm13.71-7.04a1.003 1.003 0 0 0 0-1.42l-2.34-2.34a1.003 1.003 0 0 0-1.42 0l-1.83 1.83 3.75 3.75 1.84-1.82z"/>
+                      </svg>
+                    </button>
+                    <button class="sheet-action-btn delete" title="Delete" data-id="${sheet.id}">
+                      <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor">
+                        <path d="M7 8v6m3-6v6m3-6v6M4 6h12M6 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                      </svg>
+                    </button>
+                  </div>
+                `;
+                
+                // Sheet click handler
+                li.onclick = (e) => {
+                  if (!e.target.closest('.sheet-actions')) {
+                    switchSheet(sheet.id);
+                  }
+                };
+                
+                // Rename button handler
+                const renameBtn = li.querySelector('.rename');
+                renameBtn.onclick = (e) => {
+                  e.stopPropagation();
+                  renameSheet(sheet.id);
+                };
+                
+                // Delete button handler
+                const deleteBtn = li.querySelector('.delete');
+                deleteBtn.onclick = (e) => {
+                  e.stopPropagation();
+                  deleteSheet(sheet.id);
+                };
+                
+                sheetList.appendChild(li);
+              });
+            });
+        }
+        
+        function renameSheet(sheetId) {
+          const newName = prompt('Rename sheet', subjectNameEl.textContent);
+          if (newName && newName.trim()) {
+            db.collection('users').doc(auth.currentUser.uid)
+              .collection('sheets').doc(sheetId)
+              .update({
+                name: newName.trim(),
+                lastSaved: new Date().toISOString()
+              })
+              .then(() => {
+                subjectNameEl.textContent = newName.trim();
+                if (sheetId === currentSheetId) {
+                  saveState();
+                }
+                renderSheetList();
+              });
+          }
+        }
+        
+        function switchSheet(sheetId) {
+          db.collection('users').doc(auth.currentUser.uid)
+            .collection('sheets').doc(sheetId).get()
+            .then((doc) => {
+              if (doc.exists) {
+                const sheet = doc.data();
+                currentSheetId = sheetId;
+                localStorage.setItem('efs_current_sheet', sheetId);
+                
+                students = sheet.students || [];
+                subjectNameEl.textContent = sheet.name || 'New Sheet';
+                document.getElementById('lastSaved').textContent = sheet.lastSaved ? 
+                  new Date(sheet.lastSaved).toLocaleString() : 'Never';
+                
+                render();
+                renderSheetList();
+                toggleSlidebar();
+              }
+            });
+        }
+        
+        function deleteSheet(sheetId) {
+          if (!auth.currentUser) return;
+          
+          db.collection('users').doc(auth.currentUser.uid)
+            .collection('sheets').get()
+            .then((querySnapshot) => {
+              if (querySnapshot.size <= 1) {
+                alert('You must have at least one sheet');
+                return;
+              }
+              
+              if (!confirm('Delete this sheet? This action cannot be undone.')) return;
+              
+              return db.collection('users').doc(auth.currentUser.uid)
+                .collection('sheets').doc(sheetId).delete();
+            })
+            .then(() => {
+              if (sheetId === currentSheetId) {
+                // Switch to the first available sheet
+                return db.collection('users').doc(auth.currentUser.uid)
+                  .collection('sheets').limit(1).get();
+              }
+            })
+            .then((querySnapshot) => {
+              if (querySnapshot && !querySnapshot.empty) {
+                const firstSheet = querySnapshot.docs[0];
+                switchSheet(firstSheet.id);
+              } else if (sheetId === currentSheetId) {
+                // No sheets left, create a new default one
+                createDefaultSheet();
+              }
+              
+              renderSheetList();
+            });
+        }
+
+        // --- Utils ---
+        function uid(){ return Math.floor(Math.random()*1e8); }
+
+        function formatCurrency(n){ return n.toLocaleString('en-IN'); }
+
+        // --- Render ---
+        function render(){
+          // apply filters & search & sort
+          const query = searchInput.value.trim().toLowerCase();
+          const activeFilter = document.querySelector('.filter-btn.active')?.dataset.filter || 'all';
+          const sort = sortSelect.value;
+
+          let list = students.slice();
+
+          if(activeFilter === 'paid') list = list.filter(s=>s.paid);
+          if(activeFilter === 'unpaid') list = list.filter(s=>!s.paid);
+
+          if(query) list = list.filter(s => s.name.toLowerCase().includes(query));
+
+          if(sort === 'name_asc') list.sort((a,b)=>a.name.localeCompare(b.name));
+          if(sort === 'name_desc') list.sort((a,b)=>b.name.localeCompare(a.name));
+          if(sort === 'paid_desc') list.sort((a,b)=> (b.paid - a.paid) || a.name.localeCompare(b.name));
+          if(sort === 'paid_asc') list.sort((a,b)=> (a.paid - b.paid) || a.name.localeCompare(b.name));
+
+          // build table
+          studentsTbody.innerHTML = '';
+          list.forEach(s => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+              <td>${highlight(s.name, query)}</td>
+              <td>
+                <label style="display: flex; align-items: center; gap: 8px">
+                  <input type="checkbox" class="paid-toggle" data-id="${s.id}" ${s.paid? 'checked': ''}>
+                  <span class="text-muted">₹${s.fee || 0}</span>
+                </label>
+              </td>
+              <td>
+                <div class="status-indicator">
+                  <div class="status-dot ${s.paid? 'paid':'unpaid'}"></div>
+                  <span>${s.paid? 'Paid':'Not paid'}</span>
+                </div>
+              </td>
+              <td>
+                <div class="action-buttons">
+                  <!-- Edit Icon -->
+                  <button class="action-btn edit-btn" data-edit="${s.id}" title="Edit">
+                    <svg viewBox="0 0 20 20" fill="none"><path d="M4 13.5V16h2.5l7.06-7.06-2.5-2.5L4 13.5zm13.71-7.04a1.003 1.003 0 0 0 0-1.42l-2.34-2.34a1.003 1.003 0 0 0-1.42 0l-1.83 1.83 3.75 3.75 1.84-1.82z" fill="currentColor"/></svg>
+                  </button>
+                  <!-- Delete Icon -->
+                  <button class="action-btn delete-btn" data-delete="${s.id}" title="Delete">
+                    <svg viewBox="0 0 20 20" fill="none"><path d="M7 8v6m3-6v6m3-6v6M4 6h12M6 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                  </button>
+                </div>
+              </td>
+            `;
+            studentsTbody.appendChild(tr);
+          });
+
+          attachRowListeners();
+          updateStats();
+        }
+
+        function highlight(text, q){
+          if(!q) return escapeHtml(text);
+          const idx = text.toLowerCase().indexOf(q);
+          if(idx === -1) return escapeHtml(text);
+          return escapeHtml(text.substring(0,idx)) + '<mark>' + escapeHtml(text.substring(idx, idx+q.length)) + '</mark>' + escapeHtml(text.substring(idx+q.length));
+        }
+
+        function escapeHtml(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+        function attachRowListeners(){
+          document.querySelectorAll('.paid-toggle').forEach(cb=>{
+            cb.onchange = function(){
+              const id = parseInt(this.dataset.id);
+              const st = students.find(x=>x.id===id);
+              if(st){ st.paid = this.checked; saveState(); render(); }
+            };
+          });
+
+          document.querySelectorAll('[data-edit]').forEach(btn=>{
+            btn.onclick = function(){ openModal('edit', parseInt(this.dataset.edit)); };
+          });
+
+          document.querySelectorAll('[data-delete]').forEach(btn=>{
+            btn.onclick = function(){
+              const id = parseInt(this.dataset.delete);
+              if(confirm('Delete this student?')){ students = students.filter(s=>s.id!==id); saveState(); render(); }
+            };
+          });
+        }
+
+        // --- Stats & Chart ---
+        function updateStats(){
+          const total = students.length;
+          const paidCount = students.filter(s=>s.paid).length;
+          const amount = students.reduce((sum, student) => sum + (student.paid ? (student.fee || 0) : 0), 0);
+          
+          totalStudentsEl.textContent = total;
+          collectedCountEl.textContent = paidCount;
+          collectedAmountEl.textContent = formatCurrency(amount);
+
+          const pct = total ? Math.round((paidCount/total)*100) : 0;
+          progressFill.style.width = pct + '%';
+          progressText.textContent = pct + '%';
+
+          // donut chart
+          if(!donutChart){
+            donutChart = new Chart(donutCtx,{
+              type:'doughnut',
+              data:{labels:['Paid','Unpaid'],datasets:[{data:[paidCount, total-paidCount],backgroundColor:['#20c997','#e74c3c']}],
+              },
+              options:{
+                responsive:true,
+                maintainAspectRatio:false,
+                plugins:{
+                  legend:{display:false},
+                  tooltip: {
+                    callbacks: {
+                      label: function(ctx){
+                        return ctx.label+": "+ctx.raw;
+                      }
+                    }
+                  }
+                },
+                cutout: '72%',
+                layout: {padding: 0}
+              }
+            });
+          } else {
+            donutChart.data.datasets[0].data = [paidCount, total-paidCount];
+            donutChart.update();
+          }
+        }
+
+        // --- Modal ---
+        const modal = document.getElementById('modal');
+        const modalTitle = document.getElementById('modalTitle');
+        const studentNameInput = document.getElementById('studentNameInput');
+        const studentFeeInput = document.getElementById('studentFeeInput');
+        const saveModalBtn = document.getElementById('saveModal');
+        const cancelModal = document.getElementById('cancelModal');
+
+        function openModal(mode, id){
+          editingId = null;
+          studentNameInput.value = '';
+          studentFeeInput.value = '';
+          if(mode === 'add'){
+            modalTitle.textContent = 'Add Student';
+          } else if(mode === 'edit'){
+            modalTitle.textContent = 'Edit Student';
+            const s = students.find(x=>x.id===id);
+            if(s){ 
+              editingId = id; 
+              studentNameInput.value = s.name; 
+              studentFeeInput.value = s.fee || 0;
+            }
+          }
+          modal.classList.add('open');
+          studentNameInput.focus();
+        }
+
+        function closeModal(){ modal.classList.remove('open'); editingId = null; }
+
+        saveModalBtn.onclick = function(){
+          const name = studentNameInput.value.trim();
+          const fee = parseInt(studentFeeInput.value) || 0;
+          
+          if(!name){ alert('Enter a name'); return; }
+          if(editingId){
+            const st = students.find(s=>s.id===editingId);
+            if(st){ 
+              st.name = name;
+              st.fee = fee;
+            }
+          } else {
+            students.push({ id: uid(), name: name, paid: false, fee: fee });
+          }
+          saveState(); render(); closeModal();
+        };
+
+        cancelModal.onclick = closeModal;
+
+        // --- File import/export ---
+        document.getElementById('importBtn').onclick = ()=> document.getElementById('importFile').click();
+        document.getElementById('importFile').onchange = async function(e){
+          const f = e.target.files[0]; if(!f) return;
+          try{
+            const text = await f.text(); const data = JSON.parse(text);
+            if(!Array.isArray(data.students)) return alert('Invalid file format');
+            if(confirm(`Import ${data.students.length} students and replace current data?`)){
+              students = data.students; saveState(); render(); alert('Imported');
+            }
+          }catch(err){ alert('Import failed: '+err.message); }
+          this.value = '';
+        };
+
+        document.getElementById('exportJsonBtn').onclick = function(){
+          const payload = { 
+            metadata: { 
+              exported_at: new Date().toISOString(), 
+              subject: subjectNameEl.textContent, 
+              total: students.length 
+            }, 
+            students: students 
+          };
+          
+          const blob = new Blob([JSON.stringify(payload, null, 2)], {type:'application/json'});
+          const a = document.createElement('a'); 
+          a.href = URL.createObjectURL(blob); 
+          a.download = `fundmate_${subjectNameEl.textContent.replace(/[^a-z0-9]/gi, '_')}_${Date.now()}.json`; 
+          a.click(); 
+          URL.revokeObjectURL(a.href);
+        };
+
+        // --- Reset button ---
+        document.getElementById('resetBtn').onclick = function(){
+          if(confirm('Reset to default values? This will clear all current data.')) {
+            students = JSON.parse(JSON.stringify(DEFAULT_STUDENTS));
+            saveState();
+            render();
+          }
+        };
+
+        // --- Slidebar functions ---
+        function toggleSlidebar() {
+          hamburgerMenu.classList.toggle('open');
+          slidebar.classList.toggle('open');
+        }
+        
+        hamburgerMenu.onclick = toggleSlidebar;
+        closeSlidebar.onclick = toggleSlidebar;
+        
+        // New sheet functionality
+        newSheetBtn.onclick = function() {
+          newSheetModal.classList.add('open');
+          sheetNameInput.focus();
+        };
+        
+        saveNewSheet.onclick = function() {
+          const name = sheetNameInput.value.trim();
+          if (!name) {
+            alert('Please enter a sheet name');
+            return;
+          }
+          
+          const sheetId = 'sheet_' + Date.now();
+          const sheetData = {
+            id: sheetId,
+            name: name,
+            students: JSON.parse(JSON.stringify(DEFAULT_STUDENTS)),
+            lastSaved: new Date().toISOString()
+          };
+          
+          db.collection('users').doc(auth.currentUser.uid)
+            .collection('sheets').doc(sheetId).set(sheetData)
+            .then(() => {
+              switchSheet(sheetId);
+              sheetNameInput.value = '';
+              newSheetModal.classList.remove('open');
+            });
+        };
+        
+        cancelNewSheet.onclick = function() {
+          sheetNameInput.value = '';
+          newSheetModal.classList.remove('open');
+        };
+
+        // Edit chapter/sheet name
+        subjectNameEl.onclick = function(){
+          const newName = prompt('Enter sheet name', this.textContent);
+          if(newName && newName.trim()){ 
+            this.textContent = newName.trim(); 
+            saveState(); 
+          }
+        };
+
+        // --- Other UI wiring ---
+        document.getElementById('addBtn').onclick = ()=> openModal('add');
+        document.getElementById('searchInput').oninput = debounce(()=> render(), 220);
+        document.getElementById('sortSelect').onchange = ()=> render();
+
+        // filter buttons
+        document.querySelectorAll('.filter-btn').forEach(btn=>{
+          btn.onclick = function(){
+            document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
+            this.classList.add('active');
+            render();
+          };
+        });
+
+        // helper debounce
+        function debounce(fn,wait){ let t; return function(...a){ clearTimeout(t); t=setTimeout(()=>fn.apply(this,a), wait); } }
+
+        // Close slidebar when clicking outside
+        document.addEventListener('click', (e) => {
+          if (slidebar.classList.contains('open') && 
+              !slidebar.contains(e.target) && 
+              !hamburgerMenu.contains(e.target)) {
+            toggleSlidebar();
+          }
+        });
+
+        // Initialize the app
+        loadState();
+      }
+    </script>
+  </div>
+</body>
+</html>
