@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Login | My App</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Poppins', sans-serif; }
+    body {
+      background: linear-gradient(135deg, #6e8efb, #a777e3);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      overflow: hidden;
+    }
+    .card {
+      background: #fff;
+      border-radius: 20px;
+      width: 100%;
+      max-width: 400px;
+      box-shadow: 0 15px 35px rgba(0,0,0,0.15);
+      overflow: hidden;
+      animation: fadeIn 0.8s ease-out;
+    }
+    .form-header {
+      text-align: center;
+      padding: 1.5rem;
+      background: linear-gradient(135deg, #6e8efb, #a777e3);
+      color: white;
+      font-weight: 600;
+      font-size: 1.5rem;
+    }
+    .form-body {
+      padding: 2rem;
+      transition: transform 0.5s ease;
+    }
+    .input-group {
+      position: relative;
+      margin-bottom: 1.2rem;
+    }
+    .input-group svg {
+      position: absolute;
+      top: 50%;
+      left: 12px;
+      transform: translateY(-50%);
+      width: 20px;
+      height: 20px;
+      fill: #888;
+      transition: transform 0.3s ease, fill 0.3s ease;
+    }
+    .input-group input {
+      width: 100%;
+      padding: 0.75rem 0.75rem 0.75rem 2.8rem;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      font-size: 1rem;
+      transition: 0.3s;
+    }
+    .input-group input:focus {
+      border-color: #6e8efb;
+      outline: none;
+      box-shadow: 0 0 0 3px rgba(110,142,251,0.2);
+    }
+    button {
+      width: 100%;
+      padding: 0.75rem;
+      background: linear-gradient(135deg, #6e8efb, #a777e3);
+      border: none;
+      color: white;
+      font-size: 1rem;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: transform 0.2s;
+    }
+    button:hover { transform: scale(1.02); }
+    .toggle-link {
+      text-align: center;
+      margin-top: 1rem;
+      font-size: 0.9rem;
+      color: #666;
+      cursor: pointer;
+    }
+    .toggle-link:hover { text-decoration: underline; }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="form-header" id="form-title">Login</div>
+    <div class="form-body">
+      <div class="input-group">
+        <input type="email" id="email" placeholder="Email" required />
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+          <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 
+          1.79-4 4 1.79 4 4 4zm0 2c-2.67 
+          0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+        </svg>
+      </div>
+      <div class="input-group">
+        <input type="password" id="password" placeholder="Password" required />
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+          <path d="M12 17a2 2 0 
+          100-4 2 2 0 000 4zm6-7V7a6 6 0 
+          10-12 0v3H4v10h16V10h-2zm-8-3a4 4 0 
+          118 0v3H10V7z"/>
+        </svg>
+      </div>
+      <div class="toggle-link" id="forgot-password" style="color:#2d6cdf;">Forgot password?</div>
+      <button id="auth-btn">Login</button>
+      <div class="toggle-link" id="toggle-form">Don't have an account? Register</div>
+    </div>
+  </div>
+
+  <!-- Firebase SDKs (same version in both files) -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+
+  <script>
+    // Replace with your Firebase config from Firebase Console
+    const firebaseConfig = {
+  apiKey: "AIzaSyBBsxNIJOijdGmVUcsRt0zPNQq96YYgWAc",
+  authDomain: "fees-sheet-online.firebaseapp.com",
+  projectId: "fees-sheet-online",
+  storageBucket: "fees-sheet-online.firebasestorage.app",
+  messagingSenderId: "1018149181136",
+  appId: "1:1018149181136:web:9fa630cd808b96d31df0d5",
+  measurementId: "G-F29K3GV8YK"
+};
+
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+
+    const formTitle = document.getElementById('form-title');
+    const toggleForm = document.getElementById('toggle-form');
+    const authBtn = document.getElementById('auth-btn');
+    let isLogin = true;
+
+    toggleForm.addEventListener('click', () => {
+      isLogin = !isLogin;
+      formTitle.textContent = isLogin ? 'Login' : 'Register';
+      authBtn.textContent = isLogin ? 'Login' : 'Register';
+      toggleForm.textContent = isLogin
+        ? "Don't have an account? Register"
+        : "Already have an account? Login";
+    });
+
+    authBtn.addEventListener('click', async () => {
+      const email = document.getElementById('email').value.trim();
+      const password = document.getElementById('password').value.trim();
+      if(!email || !password) {
+        alert('Please fill in all fields');
+        return;
+      }
+      try {
+        if(isLogin) {
+          await auth.signInWithEmailAndPassword(email, password);
+        } else {
+          await auth.createUserWithEmailAndPassword(email, password);
+        }
+        window.location.href = 'index.html';
+      } catch (err) {
+        alert(err.message);
+      }
+    });
+
+
+    // Forgot Password feature
+    document.getElementById('forgot-password').addEventListener('click', () => {
+      const email = document.getElementById('email').value.trim();
+      if (!email) {
+        alert('Please enter your email first');
+        return;
+      }
+      auth.sendPasswordResetEmail(email)
+        .then(() => {
+          alert('Password reset email sent! Check your inbox.');
+        })
+        .catch((error) => {
+          alert('Error: ' + error.message);
+        });
+    });
+
+    auth.onAuthStateChanged(user => {
+      if(user) window.location.href = 'index.html';
+    });
+  </script>
+</body>
+</html>
